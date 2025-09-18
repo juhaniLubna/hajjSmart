@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام تتبع الحجاج المتقدم بالكاميرا الحرارية</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --secondary-color: #2ecc71;
+            --warning-color: #e74c3c;
+            --dark-color: #2c3e50;
+            --light-color: #ecf0f1;
+            --gray-color: #95a5a6;
+            --background: #0f172a;
+            --card-bg: #1e293b;
+            --text: #e2e8f0;
+            --accent: #38bdf8;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--background), #0b1120);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: var(--card-bg);
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        header {
+            background: var(--dark-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            font-size: 16px;
+            color: var(--light-color);
+        }
+        
+        .main-content {
+            display: flex;
+            flex-wrap: wrap;
+            padding: 20px;
+        }
+        
+        .camera-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+        }
+        
+        .info-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 15px;
+        }
+        
+        .video-container {
+            position: relative;
+            margin-bottom: 20px;
+            overflow: hidden;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        video {
+            width: 100%;
+            background: #000;
+            display: block;
+        }
+        
+        .thermal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        
+        .person-marker {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+            transition: all 0.5s ease;
+        }
+        
+        .normal-temp-marker {
+            border-color: var(--secondary-color);
+            background: rgba(46, 204, 113, 0.3);
+        }
+        
+        .high-temp-marker {
+            border-color: var(--warning-color);
+            background: rgba(231, 76, 60, 0.3);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .camera-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 50px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            flex: 1;
+            min-width: 150px;
+        }
+        
+        .btn-primary {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+        
+        .btn-secondary {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+        }
+        
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+        }
+        
+        .result-container {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .result-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        #result {
+            font-size: 18px;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            min-height: 100px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .normal-temp {
+            color: var(--secondary-color);
+        }
+        
+        .high-temp {
+            color: var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .detection-list {
+            margin-top: 20px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .detection-item {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .detection-item:last-child {
+            border-bottom: none;
+        }
+        
+        .alert-box {
+            margin-top: 15px;
+            padding: 15px;
+            background: rgba(255, 234, 167, 0.2);
+            border-left: 4px solid #fdcb6e;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .stat-box {
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            flex: 1;
+            margin: 0 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .stat-title {
+            font-size: 14px;
+            color: var(--gray-color);
+            margin-top: 5px;
+        }
+        
+        /* Dashboard Styles */
+        .dashboard-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+        }
+        
+        .dashboard-title {
+            font-size: 22px;
+            margin-bottom: 20px;
+            color: var(--accent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        @media (max-width: 1100px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .card {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            margin-bottom: 20px;
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            color: var(--accent);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+        
+        .specs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .spec-item {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .spec-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: var(--accent);
+        }
+        
+        .dashboard-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .dashboard-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        
+        .dashboard-btn {
+            padding: 10px 18px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: var(--dark-color);
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+        
+        .dashboard-btn.small {
+            background: transparent;
+            border: 1px solid var(--accent);
+            color: var(--accent);
+            padding: 8px 15px;
+        }
+        
+        .log-container {
+            height: 250px;
+            overflow-y: auto;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 15px;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 0.9rem;
+        }
+        
+        .log-entry {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .timestamp {
+            color: var(--accent);
+            margin-left: 5px;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 20px;
+            background: var(--dark-color);
+            color: var(--light-color);
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .controls {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .layout {
+                grid-template-columns: 1fr;
+            }
+            
+            .specs {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>نظام تتبع الحجاج المتقدم بالكاميرا الحرارية</h1>
+            <p class="subtitle">تقنية الذكاء الاصطناعي والحوسبة الكمية للتعرف على الحجاج وفحص درجات الحرارة</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="camera-section">
+                <div class="video-container">
+                    <video id="cameraFeed" autoplay loop muted>
+                        <source src="hajj.mp4" type="video/mp4">
+                        المتصفح لا يدعم تشغيل الفيديو
+                    </video>
+                    <div class="thermal-overlay" id="thermalOverlay">
+                        <!-- سيتم إضافة علامات الأشخاص هنا عبر الجافاسكريبت -->
+                    </div>
+                    <div class="camera-overlay">
+                        <i class="fas fa-thermometer-half"></i> كاميرا حرارية نشطة - تتبع حي
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" onclick="startDetection()">
+                        <i class="fas fa-play"></i> بدء الكشف
+                    </button>
+                    <button class="btn btn-secondary" onclick="stopDetection()">
+                        <i class="fas fa-pause"></i> إيقاف مؤقت
+                    </button>
+                    <button class="btn btn-warning" onclick="resetSystem()">
+                        <i class="fas fa-redo"></i> إعادة التعيين
+                    </button>
+                </div>
+                
+                <div class="alert-box">
+                    <i class="fas fa-info-circle"></i>
+                    <span>يقوم النظام بتتبع الحجاج تلقائيًا وفحص درجات حرارتهم باستخدام الذكاء الاصطناعي</span>
+                </div>
+                
+                <div class="result-container">
+                    <h3 class="result-title"><i class="fas fa-clipboard-list"></i> نتائج الفحص اللحظية</h3>
+                    <div id="result">
+                        <p>النظام جاهز، اضغط على "بدء الكشف" لبدء عملية المسح الحراري.</p>
+                    </div>
+                </div>
+                
+                <div class="detection-list" id="detectionList">
+                    <!-- سيتم إضافة قائمة الكشف هنا -->
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalScanned">0</div>
+                        <div class="stat-title">تم فحصهم</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="normalCases">0</div>
+                        <div class="stat-title">حالات طبيعية</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="warningCases">0</div>
+                        <div class="stat-title">حالات تحذير</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="info-section">
+                <h2 class="dashboard-title"><i class="fas fa-chart-line"></i> لوحة تحكم النظام المتقدم</h2>
+                
+                <div class="card">
+                    <h3 class="card-title">سجل الأحداث والتنبيهات</h3>
+                    <div class="log-container" id="eventLog">
+                        <div class="log-entry">تم تهيئة نظام المراقبة بنجاح. <span class="timestamp">[10:30:45]</span></div>
+                        <div class="log-entry">جاري انتظار الأحداث والتنبيهات... <span class="timestamp">[10:30:46]</span></div>
+                    </div>
+                    <div class="dashboard-controls">
+                        <button id="clearLog" class="dashboard-btn small">مسح السجل</button>
+                        <button id="exportLog" class="dashboard-btn small">تصدير السجل</button>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">معلومات النظام والمواصفات</h3>
+                    <div class="specs">
+                        <div class="spec-item">
+                            <div class="spec-title">المكونات الأساسية</div>
+                            <div>كاميرات ذكية مزودة بـ AI</div>
+                            <div>أجهزة Edge للمعالجة الأولية</div>
+                            <div>منصة حوسبة كمية (QaaS)</div>
+                            <div>قاعدة بيانات الوزارة</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-title">ميزات الأمان</div>
+                            <div>تشفير AES-256</div>
+                            <div>مصادقة متعددة العوامل</div>
+                            <div>سجلات تدقيق كاملة</div>
+                            <div>إدارة الصلاحيات</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-title">التقنيات المستخدمة</div>
+                            <div>Face Recognition</div>
+                            <div>QML (Quantum Machine Learning)</div>
+                            <div>Real-time Analytics</div>
+                            <div>Hybrid Quantum-Classical</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-title">واجهات التكامل</div>
+                            <div>RESTful APIs</div>
+                            <div>WebSocket للبيانات الحية</div>
+                            <div>واجهة وزارة الحج والعمرة</div>
+                            <div>نظام إدارة الفرق</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">إحصائيات وأداء النظام</h3>
+                    <div class="dashboard-stats">
+                        <div class="spec-item">
+                            <div class="spec-title">الحالة الحالية</div>
+                            <div>الأحداث اليومية: <span id="dailyEvents">0</span></div>
+                            <div>المطابقات الناجحة: <span id="successMatches">0</span></div>
+                            <div>الإنذارات: <span id="alertsCount">0</span></div>
+                            <div>زمن الاستجابة: <span id="responseTime">0</span> ثانية</div>
+                        </div>
+                        <div class="spec-item">
+                            <div class="spec-title">أداء الحوسبة الكمية</div>
+                            <div>مهام QML قيد التنفيذ: <span id="qmlTasks">0</span></div>
+                            <div>تحسين وقت المعالجة: <span id="processingImprovement">0%</span></div>
+                            <div>دقة النتائج: <span id="accuracy">0%</span></div>
+                            <div>استهلاك الطاقة: <span id="energyUsage">0</span> واط</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3 class="card-title">إدارة الفرق والاستجابة</h3>
+                    <div class="dashboard-controls">
+                        <button id="deployTeam" class="dashboard-btn small">نشر فريق استجابة</button>
+                        <button id="simulateAlert" class="dashboard-btn small">محاكاة إنذار</button>
+                        <button id="testIntegration" class="dashboard-btn small">اختبار التكامل</button>
+                    </div>
+                    <div class="log-container" id="teamLog">
+                        <div class="log-entry">لا توجد فرق نشطة حالياً. <span class="timestamp">[10:30:47]</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>©️ 2023 نظام تتبع الحجاج بالكاميرا الحرارية. جميع الحقوق محفوظة.</p>
+            <p>تحذير: هذه محاكاة تعليمية فقط ولا تمثل نظاماً حقيقياً. أي تطبيق حقيقي يتطلب موافقات قانونية وامتثالاً تاماً للوائح حماية البيانات.</p>
+        </footer>
+    </div>
+
+    <script>
+        // كود نظام تتبع الحجاج
+        let totalScanned = 0;
+        let normalCases = 0;
+        let warningCases = 0;
+        let detectionInterval;
+        let isDetecting = false;
+        let personId = 1;
+        
+        // أسماء الحجاج للعرض العشوائي
+        const hajNames = [
+            "أحمد السعدي", "محمد الغامدي", "علي الهاشمي", "فاطمة القحطاني", 
+            "حسن الراجحي", "سعيد الشهري", "منى العتيبي", "خالد الحربي",
+            "عبدالله الزهراني", "محمود السليم", "سعد الفهد", "نورة العلي",
+            "ياسر المالكي", "ريماس الشمراني", "بدر العريفي", "لينا الجبير"
+        ];
+        
+        function startDetection() {
+            if (isDetecting) return;
+            
+            isDetecting = true;
+            document.getElementById("result").innerHTML = "<p>جاري المسح الحراري للحجاج...</p>";
+            addLogMessage("بدأ عملية المسح الحراري للحجاج");
+            
+            // محاكاة عملية الكشف المستمرة
+            detectionInterval = setInterval(() => {
+                detectRandomPerson();
+            }, 3000);
+        }
+        
+        function stopDetection() {
+            isDetecting = false;
+            clearInterval(detectionInterval);
+            document.getElementById("result").innerHTML = "<p>تم إيقاف المسح مؤقتاً. اضغط على 'بدء الكشف' للمتابعة.</p>";
+            addLogMessage("تم إيقاف المسح مؤقتاً");
+        }
+        
+        function resetSystem() {
+            stopDetection();
+            
+            // إعادة تعيين الإحصائيات
+            totalScanned = 0;
+            normalCases = 0;
+            warningCases = 0;
+            
+            document.getElementById('totalScanned').textContent = totalScanned;
+            document.getElementById('normalCases').textContent = normalCases;
+            document.getElementById('warningCases').textContent = warningCases;
+            
+            // مسح العلامات من الفيديو
+            document.getElementById('thermalOverlay').innerHTML = '';
+            
+            // مسح قائمة الكشف
+            document.getElementById('detectionList').innerHTML = '';
+            
+            // إعادة تعيين الرسالة
+            document.getElementById("result").innerHTML = "<p>تم إعادة التعيين. النظام جاهز للبدء من جديد.</p>";
+            
+            personId = 1;
+            addLogMessage("تم إعادة تعيين النظام بالكامل");
+        }
+        
+        function detectRandomPerson() {
+            // إنشاء شخص عشوائي مع درجة حرارة
+            const name = hajNames[Math.floor(Math.random() * hajNames.length)];
+            const temp = (Math.random() * 3) + 36; // حرارة بين 36 و39
+            
+            totalScanned++;
+            document.getElementById('totalScanned').textContent = totalScanned;
+            
+            // إنشاء علامة على الفيديو
+            createPersonMarker(temp, name);
+            
+            // إضافة إلى قائمة الكشف
+            addToDetectionList(name, temp);
+            
+            let resultHTML = '';
+            if(temp > 37.5) {
+                warningCases++;
+                document.getElementById('warningCases').textContent = warningCases;
+                
+                resultHTML = `
+                    <p class="high-temp"><i class="fas fa-exclamation-triangle"></i> تنبيه: درجة حرارة مرتفعة!</p>
+                    <p>تم التعرف على: <strong>${name}</strong></p>
+                    <p>درجة الحرارة: <strong>${temp.toFixed(1)}°C</strong></p>
+                    <p>الحالة: <strong>يحتاج إلى فحص طبي عاجل</strong></p>
+                `;
+                
+                addLogMessage(`تنبيه: درجة حرارة مرتفعة لـ ${name} (${temp.toFixed(1)}°C)`);
+            } else {
+                normalCases++;
+                document.getElementById('normalCases').textContent = normalCases;
+                
+                resultHTML = `
+                    <p class="normal-temp"><i class="fas fa-check-circle"></i> حالة طبيعية</p>
+                    <p>تم التعرف على: <strong>${name}</strong></p>
+                    <p>درجة الحرارة: <strong>${temp.toFixed(1)}°C</strong></p>
+                    <p>الحالة: <strong>جيدة - يمكن المواصلة</strong></p>
+                `;
+            }
+            
+            document.getElementById("result").innerHTML = resultHTML;
+            updateStats();
+        }
+        
+        function createPersonMarker(temp, name) {
+            const overlay = document.getElementById('thermalOverlay');
+            const marker = document.createElement('div');
+            marker.className = `person-marker ${temp > 37.5 ? 'high-temp-marker' : 'normal-temp-marker'}`;
+            
+            // وضع عشوائي داخل الفيديو
+            const x = Math.random() * 80 + 10; // بين 10% و 90%
+            const y = Math.random() * 80 + 10; // بين 10% و 90%
+            
+            marker.style.left = `${x}%`;
+            marker.style.top = `${y}%`;
+            marker.innerHTML = temp > 37.5 ? '<i class="fas fa-exclamation"></i>' : '<i class="fas fa-check"></i>';
+            marker.title = `${name}: ${temp.toFixed(1)}°C`;
+            
+            overlay.appendChild(marker);
+            
+            // إزالة العلامة بعد فترة
+            setTimeout(() => {
+                if (marker.parentNode) {
+                    marker.style.opacity = '0';
+                    setTimeout(() => marker.remove(), 1000);
+                }
+            }, 5000);
+        }
+        
+        function addToDetectionList(name, temp) {
+            const list = document.getElementById('detectionList');
+            const item = document.createElement('div');
+            item.className = 'detection-item';
+            
+            const time = new Date().toLocaleTimeString();
+            
+            item.innerHTML = `
+                <div>
+                    <strong>${name}</strong>
+                    <div>${time}</div>
+                </div>
+                <div class="${temp > 37.5 ? 'high-temp' : 'normal-temp'}">
+                    <strong>${temp.toFixed(1)}°C</strong>
+                </div>
+            `;
+            
+            list.insertBefore(item, list.firstChild);
+            
+            // الحفاظ على عدد معقول من العناصر في القائمة
+            if (list.children.length > 8) {
+                list.removeChild(list.lastChild);
+            }
+        }
+        
+        // كود لوحة التحكم
+        const clearLogBtn = document.getElementById('clearLog');
+        const exportLogBtn = document.getElementById('exportLog');
+        const deployTeamBtn = document.getElementById('deployTeam');
+        const simulateAlertBtn = document.getElementById('simulateAlert');
+        const testIntegrationBtn = document.getElementById('testIntegration');
+        const eventLog = document.getElementById('eventLog');
+        const teamLog = document.getElementById('teamLog');
+
+        const dailyEvents = document.getElementById('dailyEvents');
+        const successMatches = document.getElementById('successMatches');
+        const alertsCount = document.getElementById('alertsCount');
+        const responseTime = document.getElementById('responseTime');
+        const qmlTasks = document.getElementById('qmlTasks');
+        const processingImprovement = document.getElementById('processingImprovement');
+        const accuracy = document.getElementById('accuracy');
+        const energyUsage = document.getElementById('energyUsage');
+
+        let eventsCount = 0;
+        let matchesCount = 0;
+        let alerts = 0;
+
+        function addLogMessage(message, isTeam = false) {
+            const now = new Date();
+            const timestamp = `[${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}]`;
+            const logEntry = document.createElement('div');
+            logEntry.className = 'log-entry';
+            logEntry.innerHTML = `${message} <span class="timestamp">${timestamp}</span>`;
+            const logContainer = isTeam ? teamLog : eventLog;
+            logContainer.prepend(logEntry);
+            eventsCount++;
+            if (logContainer.children.length > 15) logContainer.removeChild(logContainer.lastChild);
+            updateStats();
+        }
+
+        function updateStats() {
+            dailyEvents.textContent = eventsCount;
+            successMatches.textContent = matchesCount;
+            alertsCount.textContent = alerts;
+            responseTime.textContent = (Math.random() * 2 + 1).toFixed(2);
+            qmlTasks.textContent = Math.floor(Math.random() * 5);
+            processingImprovement.textContent = Math.floor(Math.random() * 40 + 10);
+            accuracy.textContent = Math.floor(Math.random() * 20 + 80);
+            energyUsage.textContent = Math.floor(Math.random() * 100 + 50);
+        }
+
+        function clearLog() {
+            eventLog.innerHTML = '';
+            addLogMessage('تم مسح سجل الأحداث');
+        }
+
+        function exportLog() {
+            const logText = eventLog.innerText;
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'سجل_المراقبة.txt';
+            a.click();
+            URL.revokeObjectURL(url);
+            addLogMessage('تم تصدير سجل الأحداث');
+        }
+
+        function deployTeam() {
+            const teams = ['فريق الأمن', 'فريق الدعم', 'فريق الطوارئ', 'فريق الدعم الفني'];
+            const randomTeam = teams[Math.floor(Math.random() * teams.length)];
+            const locations = ['البوابة الشمالية', 'البوابة الجنوبية', 'القاعة الرئيسية', 'منطقة VIP'];
+            const randomLocation = locations[Math.floor(Math.random() * locations.length)];
+            addLogMessage(`تم نشر ${randomTeam} إلى ${randomLocation}`, true);
+        }
+
+        function simulateAlert() {
+            const alertMessages = [
+                'تم اكتشاف تجمع غير اعتيادي',
+                'ارتفاع في درجة الحرارة',
+                'دخول منطقة مقيدة',
+                'سلوك مشبوه'
+            ];
+            const randomAlert = alertMessages[Math.floor(Math.random() * alertMessages.length)];
+            addLogMessage(`إنذار: ${randomAlert}`);
+            alerts++;
+            updateStats();
+        }
+
+        function testIntegration() {
+            addLogMessage('جاري اختبار تكامل النظام مع منصة الحوسبة الكمية');
+            setTimeout(() => {
+                addLogMessage('اختبار التكامل مع الحوسبة الكمية ناجح');
+                matchesCount++;
+                updateStats();
+            }, 3000);
+        }
+
+        function initApp() {
+            clearLogBtn.addEventListener('click', clearLog);
+            exportLogBtn.addEventListener('click', exportLog);
+            deployTeamBtn.addEventListener('click', deployTeam);
+            simulateAlertBtn.addEventListener('click', simulateAlert);
+            testIntegrationBtn.addEventListener('click', testIntegration);
+            addLogMessage('تم تهيئة لوحة المعلومات بنجاح');
+            updateStats();
+            
+            // بدء التشغيل التلقائي عند تحميل الصفحة
+            setTimeout(startDetection, 2000);
+        }
+
+        window.addEventListener('load', initApp);
+    </script>
+</body>
+</html>
